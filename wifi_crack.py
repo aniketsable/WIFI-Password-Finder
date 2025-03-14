@@ -682,8 +682,7 @@ def show_about():
           bg=current_theme["light"]["bg"]).pack(pady=10)
     
     desc_text = """Welcome to our Password Checking Software – a secure and reliable 
-solution created to help users enhance their digital safety. Developed by 
-Brajendra ., this tool is designed to check password strength and offer 
+solution created to help users enhance their digital safety. this tool is designed to check password strength and offer 
 instant feedback to improve your online security.
 
 Our goal is to promote better cybersecurity practices and help users 
@@ -708,9 +707,7 @@ using Python, ensuring a powerful yet user-friendly experience."""
     social_frame.pack(fill=X, padx=20)
     
     social_links = [
-        ("Telegram Channel →", "https://t.me/You_B_Tech"),
-        ("YouTube →", "https://youtube.com/@You_B_Tech"),
-        ("Instagram →", "https://instagram.com/you_b_tech")
+        ("Github page →", "https://github.com/aniketsable")
     ]
     
     for platform, link in social_links:

@@ -18,6 +18,7 @@ current_theme = {
 }
 is_dark_mode = False
 
+
 # Initialize other global variables
 available_devices = []
 keys = []
@@ -44,20 +45,12 @@ def check_wifi_interface():
             messagebox.showerror("Error", "No WiFi interface found!")
             return None
         
-        # Try to find an interface that's powered on
-        for iface in interfaces:
-            if iface.status() in [const.IFACE_DISCONNECTED, const.IFACE_CONNECTED]:
-                return iface
+        interface = interfaces[0]  # Always pick the first interface
         
-        # If no powered interface found, try to power on the first one
-        interface = interfaces[0]
-        try:
-            interface.disconnect()  # Ensure clean state
+        if interface.status() in [const.IFACE_DISCONNECTED, const.IFACE_CONNECTED]:
             return interface
-        except Exception as e:
-            messagebox.showerror("Error", f"Failed to initialize WiFi interface: {e}")
-            return None
-            
+        
+        return interface
     except Exception as e:
         messagebox.showerror("Error", f"Failed to initialize WiFi system: {e}")
         return None
@@ -77,49 +70,41 @@ def check_requirements():
     except Exception as e:
         messagebox.showerror("Error", "No write permission in current directory!")
         return False
-    
     return True
 
 def init_gui():
     global root, interface, style
     
-    # Check system requirements first
     if not check_requirements():
         sys.exit(1)
     
-    # Initialize GUI
     root = Tk()
-    root.title("WIFI Pass Finder")
+    root.title("WIFI Password Finder")
     root.geometry("600x800")
     root.configure(bg=current_theme["light"]["bg"])
     
-    # Initialize WiFi interface
     interface = check_wifi_interface()
     if not interface:
         root.destroy()
         sys.exit(1)
     
-    # Setup style
     style = ttk.Style()
     style.theme_use('clam')
     style.configure("custom.Horizontal.TProgressbar",
-                   troughcolor=current_theme["light"]["bg"],
-                   background='#4CAF50',
-                   thickness=20)
+                    background='#4CAF50',
+                    thickness=20,
+                    troughcolor=current_theme["light"]["bg"])
     
-    # Create GUI elements
     create_frames()
     create_widgets()
     create_menu()
     setup_keyboard_shortcuts()
     
-    # Load configuration at startup
     try:
         load_config()
     except Exception as e:
         print(f"Failed to load configuration: {e}")
     
-    # Save configuration on exit
     root.protocol("WM_DELETE_WINDOW", lambda: [save_config(), root.destroy()])
 
 def create_frames():
@@ -137,20 +122,16 @@ def create_frames():
 def create_widgets():
     global network_listbox, file_entry, process_text, progress, status_var, status_label, status_bar, scan_button, filter_button
     
-    # Top frame widgets
-    Label(top_frame, text="WIFI Pass Finder", font=("Helvetica", 18, "bold"),
-          bg=current_theme["light"]["bg"], fg=current_theme["light"]["fg"]).pack(pady=10)
+    Label(top_frame, text="WIFI Password Finder", font=("Helvetica", 18, "bold"),
+            bg=current_theme["light"]["bg"], fg=current_theme["light"]["fg"]).pack(pady=10)
     
-    # Theme controls
     theme_frame = Frame(top_frame, bg=current_theme["light"]["bg"])
     theme_frame.pack(fill=X, pady=5)
     Button(theme_frame, text="Toggle Dark Mode", command=toggle_dark_mode).pack(side=LEFT, padx=5)
     Button(theme_frame, text="Custom Theme", command=choose_theme).pack(side=LEFT, padx=5)
     
-    # Middle frame widgets
     Label(middle_frame, text="Available Networks:", bg=current_theme["light"]["bg"]).pack(pady=5)
     
-    # Network frame
     network_frame = Frame(middle_frame, bg=current_theme["light"]["bg"])
     network_frame.pack(fill=X, pady=5)
     
@@ -169,15 +150,14 @@ def create_widgets():
     network_listbox.bind('<Double-Button-1>', show_network_details)
     
     scan_button = Button(middle_frame, text="Scan Networks", command=update_network_list,
-                        bg=current_theme["light"]["button_bg"], fg="white")
+                        bg=current_theme["light"]["button_bg"], fg="white", width=25, font=("Helvetica", 12))
     scan_button.pack(pady=5)
     
     filter_button = Button(middle_frame, text="Filter Networks", command=filter_networks,
-                          bg=current_theme["light"]["button_bg"],
-                          fg=current_theme["light"]["button_fg"])
+                            bg=current_theme["light"]["button_bg"],
+                            fg=current_theme["light"]["button_fg"])
     filter_button.pack(pady=5)
     
-    # Password file frame
     file_frame = Frame(middle_frame, bg=current_theme["light"]["bg"])
     file_frame.pack(fill=X, pady=5)
     Label(file_frame, text="Password List:", bg=current_theme["light"]["bg"]).pack(side=LEFT, padx=5)
@@ -186,15 +166,14 @@ def create_widgets():
     file_entry.insert(0, os.path.join(os.path.dirname(__file__), "wordlist.txt"))
     Button(file_frame, text="Browse", command=browse_password_file).pack(side=LEFT, padx=5)
     
-    # Action buttons
     Button(middle_frame, text="Start Cracking", command=start_cracking,
-           bg=current_theme["light"]["button_bg"], fg="white").pack(pady=5)
-    Button(middle_frame, text="Save Results", command=save_results,
-           bg=current_theme["light"]["button_bg"], fg="white").pack(pady=5)
+            bg="red", fg="white", width=25, font=("Helvetica", 12)).pack(pady=5)
     
-    # Progress and status
+    Button(middle_frame, text="Save Results", command=save_results,
+            bg=current_theme["light"]["button_bg"], fg="white").pack(pady=5)
+    
     progress = ttk.Progressbar(bottom_frame, style="custom.Horizontal.TProgressbar",
-                              orient=HORIZONTAL, length=400, mode='determinate')
+                                orient=HORIZONTAL, length=400, mode='determinate')
     progress.pack(pady=10)
     
     status_var = StringVar()
@@ -202,10 +181,9 @@ def create_widgets():
                         bg=current_theme["light"]["bg"], fg="green")
     status_label.pack(pady=5)
     
-    # Process output
     process_text = Text(bottom_frame, width=60, height=10, wrap=WORD,
-                       bg=current_theme["light"]["entry_bg"],
-                       fg=current_theme["light"]["fg"])
+                        bg=current_theme["light"]["entry_bg"],
+                        fg=current_theme["light"]["fg"])
     process_text.pack(pady=10)
     process_text.config(state=DISABLED)
     
@@ -213,13 +191,11 @@ def create_widgets():
     scrollbar.pack(side="right", fill="y")
     process_text.configure(yscrollcommand=scrollbar.set)
     
-    # Add tooltips
     create_tooltip(scan_button, "Click to scan for available WiFi networks")
     create_tooltip(network_listbox, "Select a network to crack")
     create_tooltip(filter_button, "Filter networks by signal strength")
     create_tooltip(file_entry, "Enter the path to your password list file")
     
-    # Status bar
     status_bar = Label(root, text="Ready", bd=1, relief=SUNKEN, anchor=W)
     status_bar.pack(side=BOTTOM, fill=X)
 
@@ -239,7 +215,7 @@ def show_network_details(event=None):
     details_window.configure(bg=current_theme["light"]["bg"])
     
     Label(details_window, text="Network Details", font=("Helvetica", 14, "bold"),
-          bg=current_theme["light"]["bg"]).pack(pady=10)
+            bg=current_theme["light"]["bg"]).pack(pady=10)
     
     details_frame = Frame(details_window, bg=current_theme["light"]["bg"])
     details_frame.pack(fill=BOTH, expand=True, padx=20, pady=10)
@@ -249,7 +225,7 @@ def show_network_details(event=None):
     Label(details_frame, text=f"Authentication: {auth}", bg=current_theme["light"]["bg"]).pack(anchor=W)
     
     Button(details_window, text="Start Cracking", command=lambda: [details_window.destroy(), start_cracking()],
-           bg=current_theme["light"]["button_bg"], fg="white").pack(pady=10)
+            bg=current_theme["light"]["button_bg"], fg="white").pack(pady=10)
 
 def save_network_profile():
     selected_items = network_listbox.selection()
@@ -325,10 +301,7 @@ def create_tooltip(widget, text):
     widget.bind('<Enter>', show_tooltip)
 
 def schedule_network_scan():
-    Timer(30.0, update_network_list).start()  # Auto refresh every 30 seconds
-
-
-
+    Timer(120.0, update_network_list).start()  # Auto refresh every 120 seconds
 
 def toggle_dark_mode():
     global is_dark_mode
@@ -354,9 +327,9 @@ def update_theme(theme):
                 if isinstance(child, (Label, Text)):
                     child.configure(bg=theme["bg"], fg=theme["fg"])
                 elif isinstance(child, Button):
-                    child.configure(bg=theme["button_bg"], fg=theme["button_fg"])
+                    child.configure(bg=theme["button_bg"], fg=theme["button_fg"], width=20, font=("Helvetica", 12))
                 elif isinstance(child, Entry):
-                    child.configure(bg=theme["entry_bg"], fg=theme["fg"])
+                    child.configure(bg=theme["entry_bg"], fg=theme["fg"], font=("Helvetica", 12))
                 elif isinstance(child, Listbox):
                     child.configure(bg=theme["entry_bg"], fg=theme["fg"])
 
@@ -389,10 +362,21 @@ def update_status(message, is_error=False):
 
 # Function to scan for Wi-Fi networks
 def scan_networks(interface):
-    interface.scan()
-    time.sleep(5)  # Wait for the scan to complete
-    networks = interface.scan_results()
-    return networks
+    try:
+        if not interface:
+            raise ValueError("WiFi interface not initialized")
+        
+        interface.scan()
+        time.sleep(5)  # Wait for scan results
+        networks = interface.scan_results()
+        
+        if networks is None:
+            raise ValueError("Failed to retrieve network scan results")
+        
+        return networks
+    except Exception as e:
+        messagebox.showerror("Error", f"Failed to scan networks: {e}")
+        return []
 
 # Function to attempt connecting to an open network
 def connect_open_network(interface, ssid):
@@ -424,7 +408,7 @@ def connect_secured_network(interface, ssid, password):
 def create_scanning_animation():
     scanning_window = Toplevel(root)
     scanning_window.title("Scanning")
-    scanning_window.geometry("300x150")
+    scanning_window.geometry("300x125")
     scanning_window.configure(bg=current_theme["light"]["bg"])
     scanning_window.transient(root)
     scanning_window.grab_set()
@@ -447,14 +431,14 @@ def filter_networks():
     var = StringVar(value="all")
     
     Label(filter_window, text="Filter by Signal Strength:",
-          bg=current_theme["light"]["bg"]).pack(pady=10)
+          bg=current_theme["light"]["bg"], font=("Helvetica", 12)).pack(pady=10)
     
     Radiobutton(filter_window, text="All", variable=var, value="all",
-                bg=current_theme["light"]["bg"]).pack()
+                bg=current_theme["light"]["bg"], font=("Helvetica", 12)).pack()
     Radiobutton(filter_window, text="Excellent Only", variable=var, value="excellent",
-                bg=current_theme["light"]["bg"]).pack()
+                bg=current_theme["light"]["bg"], font=("Helvetica", 12)).pack()
     Radiobutton(filter_window, text="Good and Better", variable=var, value="good",
-                bg=current_theme["light"]["bg"]).pack()
+                bg=current_theme["light"]["bg"], font=("Helvetica", 12)).pack()
     
     def apply_filter():
         filter_type = var.get()
@@ -471,39 +455,40 @@ def filter_networks():
     
     Button(filter_window, text="Apply", command=apply_filter,
            bg=current_theme["light"]["button_bg"],
-           fg=current_theme["light"]["button_fg"]).pack(pady=10)
+           fg=current_theme["light"]["button_fg"], font=("Helvetica", 12)).pack(pady=10)
 
 def update_network_list():
     global available_devices
+
+    if not interface:
+        messagebox.showerror("Error", "WiFi interface is not initialized!")
+        return
+    
     scanning_window = create_scanning_animation()
     root.update()
-    
+
     try:
         status_bar.config(text="Scanning for networks...")
         available_devices = scan_networks(interface)
+
         network_listbox.delete(*network_listbox.get_children())
-        
+
         for network in available_devices:
             if network.ssid:
                 signal_strength = abs(network.signal)
-                if signal_strength <= 50:
-                    strength = "Excellent"
-                elif signal_strength <= 60:
-                    strength = "Good"
-                elif signal_strength <= 70:
-                    strength = "Fair"
-                else:
-                    strength = "Poor"
-                
+                strength = ("Excellent" if signal_strength <= 50 else
+                            "Good" if signal_strength <= 60 else
+                            "Fair" if signal_strength <= 70 else "Poor")
+
                 auth_type = "Unknown"
-                if network.akm[0] == const.AKM_TYPE_WPA2PSK:
-                    auth_type = "WPA2-PSK"
-                elif network.akm[0] == const.AKM_TYPE_WPAPSK:
-                    auth_type = "WPA-PSK"
-                    
-                network_listbox.insert('', 'end', text=network.ssid, 
-                                     values=(strength, auth_type))
-        
+                if network.akm and len(network.akm) > 0:
+                    if network.akm[0] == const.AKM_TYPE_WPA2PSK:
+                        auth_type = "WPA2-PSK"
+                    elif network.akm[0] == const.AKM_TYPE_WPAPSK:
+                        auth_type = "WPA-PSK"
+
+                network_listbox.insert('', 'end', text=network.ssid, values=(strength, auth_type))
+
         status_bar.config(text=f"Found {len(network_listbox.get_children())} networks")
     except Exception as e:
         messagebox.showerror("Error", f"Failed to scan networks: {e}")
@@ -512,6 +497,11 @@ def update_network_list():
         scanning_window.destroy()
     
     schedule_network_scan()
+
+
+
+
+
 
 # Function to start the password cracking process
 def start_cracking():
@@ -544,7 +534,8 @@ def start_cracking():
     
     total_passwords = len(keys)
     found_password = None
-    
+
+    # Loop through each password in the list
     for idx, password in enumerate(keys, 1):
         progress['value'] = (idx / total_passwords) * 100
         status_var.set(f"Trying password {idx}/{total_passwords}")
@@ -570,6 +561,9 @@ def start_cracking():
     else:
         track_connection_attempt(selected_network, None, False)
         status_var.set(f"No valid password found for '{selected_network}'")
+
+
+
 
 # Function to show congratulation popup
 def calculate_password_strength(password):
@@ -654,7 +648,7 @@ def show_congratulation_popup(ssid, password, strength_label):
 
     popup = Toplevel(root)
     popup.title("Password Found")
-    popup.geometry("300x200")
+    popup.geometry("250x50")
     popup.configure(bg=current_theme["bg"])
 
     Label(popup, text="Congratulations!", font=("Helvetica", 14, "bold"), bg=current_theme["bg"], fg=current_theme["fg"]).pack(pady=10)
@@ -663,8 +657,8 @@ def show_congratulation_popup(ssid, password, strength_label):
     password_label = Label(popup, text=password, font=("Helvetica", 12, "bold"), bg=current_theme["bg"], fg="#4CAF50")
     password_label.pack(pady=5)
 
-    Button(popup, text="Copy Password", command=lambda: copy_password(password), bg=current_theme["button_bg"], fg=current_theme["button_fg"]).pack(pady=5)
-    Button(popup, text="OK", command=on_ok, bg=current_theme["button_bg"], fg=current_theme["button_fg"]).pack(pady=10)
+    Button(popup, text="Copy Password", command=lambda: copy_password(password), bg=current_theme["button_bg"], fg=current_theme["button_fg"], font=("Helvetica", 12)).pack(pady=5)
+    Button(popup, text="OK", command=on_ok, bg=current_theme["button_bg"], fg=current_theme["button_fg"], font=("Helvetica", 12)).pack(pady=10)
 
 # Function to copy the discovered password to clipboard
 def copy_password(password):
@@ -682,7 +676,7 @@ def show_about():
           bg=current_theme["light"]["bg"]).pack(pady=10)
     
     desc_text = """Welcome to our Password Checking Software – a secure and reliable 
-solution created to help users enhance their digital safety. this tool is designed to check password strength and offer 
+solution created to help users enhance their digital safety. This tool is designed to check password strength and offer 
 instant feedback to improve your online security.
 
 Our goal is to promote better cybersecurity practices and help users 
@@ -692,7 +686,7 @@ using Python, ensuring a powerful yet user-friendly experience."""
     desc_label = Label(about_window, text=desc_text, 
                       bg=current_theme["light"]["bg"],
                       wraplength=400,
-                      justify=LEFT)
+                      justify=LEFT, font=("Helvetica", 12))
     desc_label.pack(pady=10, padx=20)
     
     Label(about_window, text="For more updates and future projects, follow me on:", 
@@ -707,7 +701,9 @@ using Python, ensuring a powerful yet user-friendly experience."""
     social_frame.pack(fill=X, padx=20)
     
     social_links = [
-        ("Github page →", "https://github.com/aniketsable")
+        ("Github Page →", "https://github.com/aniketsable"),
+        ("YouTube →", "https://youtube.com/"),
+        ("Instagram →", "https://instagram.com/")
     ]
     
     for platform, link in social_links:
@@ -715,7 +711,7 @@ using Python, ensuring a powerful yet user-friendly experience."""
                           text=f"{platform} {link}",
                           bg=current_theme["light"]["bg"],
                           fg="#0066cc",
-                          cursor="hand2")
+                          cursor="hand2", font=("Helvetica", 12))
         link_label.pack(anchor=W, pady=2)
         link_label.bind("<Button-1>", lambda e, url=link: webbrowser.open(url))
 
@@ -739,7 +735,7 @@ def show_help():
     help_window.configure(bg=current_theme["light"]["bg"])
     
     help_text_widget = Text(help_window, wrap=WORD, bg=current_theme["light"]["bg"], 
-         font=("Helvetica", 10))
+         font=("Helvetica", 12))
     help_text_widget.insert('1.0', help_text)
     help_text_widget.pack(fill=BOTH, expand=True, padx=10, pady=10)
 
@@ -777,6 +773,7 @@ def export_results(format_type="txt"):
         messagebox.showwarning("Warning", "No results to export!")
         return
     
+    # Set file extension and type
     if format_type == "txt":
         filetypes = [("Text files", "*.txt")]
         default_ext = ".txt"
@@ -787,28 +784,36 @@ def export_results(format_type="txt"):
         filetypes = [("JSON files", "*.json")]
         default_ext = ".json"
     
+    # Generate filename with timestamp
     filename = f"wifi_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}{default_ext}"
     filepath = filedialog.asksaveasfilename(defaultextension=default_ext,
-                                          initialfile=filename,
-                                          filetypes=filetypes)
+                                            initialfile=filename,
+                                            filetypes=filetypes)
+
     if filepath:
         try:
+            # Save as TXT
             if format_type == "txt":
                 with open(filepath, 'w') as f:
                     for ssid, password in final_output.items():
                         f.write(f"Network: {ssid}\nPassword: {password}\n\n")
+            
+            # Save as CSV
             elif format_type == "csv":
                 with open(filepath, 'w') as f:
                     f.write("Network,Password\n")
                     for ssid, password in final_output.items():
                         f.write(f"{ssid},{password}\n")
+            
+            # Save as JSON
             else:
                 with open(filepath, 'w') as f:
                     json.dump(final_output, f, indent=4)
+
             messagebox.showinfo("Success", f"Results exported to {filepath}")
+
         except Exception as e:
             messagebox.showerror("Error", f"Failed to export results: {e}")
-
 def create_menu():
     menubar = Menu(root)
     root.config(menu=menubar)
@@ -861,9 +866,6 @@ def update_process_text(text):
     process_text.see(END)
     process_text.config(state=DISABLED)
 
-
-
 if __name__ == "__main__":
     init_gui()
     root.mainloop()
-
